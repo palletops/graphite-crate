@@ -90,7 +90,10 @@
          "python-cairo"]
    :aptitude ["python-virtualenv" "python-setuptools" "python-dev"
               "python-cairo"])
-  (directory home :owner user)
+  (directory home :owner user :group group)
+  (exec-checked-script
+   "Allow pallet script execution as other users"
+   ("chmod" "711" .))
   (with-action-options {:sudo-user user :script-dir (script (~user-home ~user))}
     (exec-checked-script
      "Install graphite with virtualenv"
@@ -223,12 +226,15 @@
      ;; (str "Graphite web server")
      (source (str ~home "/bin/activate"))
      (when (not (pipe (ps ax) (grep gunicorn_django) (grep -v grep)))
-       ("nohup"
-        (str ~home "/bin/gunicorn_django")
-        -u ~user -g ~group -b ~webapp-bind-address
-        (str "--access-logfile=" ~home "/storage/log/webapp/gunicorn.log")
-        (str "--pythonpath=" ~home "/webapp")
-        "graphite.settings")))))
+       ("("
+        ("nohup"
+          (str ~home "/bin/gunicorn_django")
+          -u ~user -g ~group -b ~webapp-bind-address
+          (str "--access-logfile=" ~home "/storage/log/webapp/gunicorn.log")
+          (str "--pythonpath=" ~home "/webapp")
+          "graphite.settings")
+        "& )")
+       (sleep 5)))))                    ; allow sub-process to start
 
 (defn graphite
   "Returns a server-spec that installs and configures graphite"
