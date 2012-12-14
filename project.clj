@@ -1,4 +1,4 @@
-(defproject com.palletops/graphite-crate "0.1.0"
+(defproject com.palletops/graphite-crate "0.1.1-SNAPSHOT"
   :description "Crate for graphite installation"
   :url "http://github.com/palletops/graphite-crate"
   :license {:name "All rights reserved"}
