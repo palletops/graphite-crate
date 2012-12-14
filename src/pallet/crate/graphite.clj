@@ -35,8 +35,6 @@
 (def ^{:doc "Flag for recognising changes to configuration"}
   graphite-config-changed-flag "graphite-config")
 
-;;; # Configuration DSL
-
 ;;; # Settings
 (defn default-settings []
   {:version "0.9.10"
