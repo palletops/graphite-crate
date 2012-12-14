@@ -9,7 +9,7 @@
   "A pallet crate to install and configure graphite"
   (:use
    [clojure.string :only [join]]
-   [clojure.algo.monads :only [m-when]]
+   [pallet.monad.state-monad :only [m-when]]
    [pallet.action :only [with-action-options]]
    [pallet.actions
     :only [directory exec-checked-script exec-script packages
