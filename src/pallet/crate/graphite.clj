@@ -202,7 +202,7 @@
     (with-action-options {:script-dir home :sudo-user user}
       (exec-checked-script
        (str "Graphite " daemon " " action)
-       (source (str ~home "/bin/activate"))
+       ("source" (str ~home "/bin/activate"))
        (if (not ((str ~home "/bin/" ~daemon ".py") status))
          ("nohup" (str ~home "/bin/" ~daemon ".py") ~(name action)))))))
 
@@ -215,8 +215,8 @@
       (exec-script
        ;; TODO work out how to check if this is already running
        ;; (str "Graphite web server")
-       (source (str ~home "/bin/activate"))
-       (when (not (pipe (ps ax) (grep gunicorn_django) (grep -v grep)))
+       ("source" (str ~home "/bin/activate"))
+       (when (not (pipe ("ps" ax) ("grep" gunicorn_django) ("grep" -v grep)))
          ("("
           ("nohup"
            (str ~home "/bin/gunicorn_django")
@@ -225,7 +225,7 @@
            (str "--pythonpath=" ~home "/webapp")
            "graphite.settings")
           "& )")
-         (sleep 5))))))                 ; allow sub-process to start
+         ("sleep" 5))))))                 ; allow sub-process to start
 
 (defn graphite
   "Returns a server-spec that installs and configures graphite"
