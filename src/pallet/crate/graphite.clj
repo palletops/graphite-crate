@@ -7,28 +7,28 @@
 
 (ns pallet.crate.graphite
   "A pallet crate to install and configure graphite"
-  (:use
-   [clojure.string :only [join]]
-   [pallet.action :only [with-action-options]]
+  (:require
+   [clojure.string :refer [join]]
+   [pallet.action :refer [with-action-options]]
    [pallet.actions
-    :only [directory exec-checked-script exec-script packages
-           remote-directory remote-file service symbolic-link user group
-           assoc-settings]
+    :refer [assoc-settings directory exec-checked-script exec-script group
+            packages remote-directory remote-file sed service symbolic-link
+            user]
     :rename {user user-action group group-action
              assoc-settings assoc-settings-action
              service service-action}]
-   [pallet.api :only [plan-fn server-spec]]
-   [pallet.config-file.format :only [sectioned-properties]]
+   [pallet.api :refer [plan-fn] :as api]
+   [pallet.config-file.format :refer [sectioned-properties]]
    [pallet.crate
-    :only [defplan assoc-settings defmethod-plan get-settings
-           get-node-settings group-name nodes-with-role target-id]]
-   [pallet.crate-install :only [install]]
-   [pallet.crate.graphite.config :only [carbon-config]]
-   [pallet.script.lib :only [pid-root log-root config-root user-home]]
-   [pallet.stevedore :only [script]]
-   [pallet.utils :only [apply-map]]
+    :refer [defplan assoc-settings defmethod-plan get-settings
+            get-node-settings group-name nodes-with-role target-id]]
+   [pallet.crate-install :as crate-install]
+   [pallet.crate.graphite.config :refer [carbon-config]]
+   [pallet.script.lib :refer [pid-root log-root config-root user-home]]
+   [pallet.stevedore :refer [fragment script]]
+   [pallet.utils :refer [apply-map]]
    [pallet.version-dispatch
-    :only [defmulti-version-plan defmethod-version-plan]]))
+    :refer [defmulti-version-plan defmethod-version-plan]]))
 
 
 (def ^{:doc "Flag for recognising changes to configuration"}
@@ -64,19 +64,20 @@
     [os os-version version settings]
   (cond
    (:install-strategy settings) settings
-   :else  (assoc settings :install-strategy ::virtualenv)))
+   :else (assoc settings :install-strategy ::virtualenv)))
 
-(defplan graphite-settings
+(defplan settings
   "Settings for graphite"
   [{:keys [user owner group dist dist-urls cloudera-version version
            instance-id]
     :as settings}]
-  [settings (merge (default-settings) settings)
-   settings (settings-map (:version settings) settings)]
-  (assoc-settings :graphite settings {:instance-id instance-id}))
+  (let [settings (merge (default-settings) settings)
+        settings (settings-map (:version settings) settings)]
+    (assert (:install-strategy settings) "No install strategy specified.")
+    (assoc-settings :graphite settings {:instance-id instance-id})))
 
 ;;; # Install
-(defmethod-plan install ::virtualenv
+(defmethod-plan crate-install/install ::virtualenv
   [facility instance-id]
   (let [{:keys [user owner group src-dir home url] :as settings}
         (get-settings facility {:instance-id instance-id})]
@@ -91,7 +92,7 @@
      "Allow pallet script execution as other users"
      ("chmod" "711" .))
     (with-action-options
-      {:sudo-user user :script-dir (script (~user-home ~user))}
+      {:sudo-user user :script-dir (fragment (~user-home ~user))}
       (exec-checked-script
        "Install graphite with virtualenv"
        (when (not (file-exists? (str ~home "/bin/python")))
@@ -110,11 +111,11 @@
     (remote-file (str home "/lib/python2.7/site-packages/cairo")
                  :link "/usr/lib/python2.7/dist-packages/cairo")))
 
-(defplan install-graphite
+(defplan install
   "Install graphite."
-  [& {:keys [instance-id]}]
+  [{:keys [instance-id]}]
   (let [settings (get-settings :graphite {:instance-id instance-id})]
-    (install :graphite instance-id)))
+    (crate-install/install :graphite instance-id)))
 
 
 ;; (defplan install-gunicorn
@@ -128,7 +129,7 @@
 ;;      ("easy_install" gunicorn))))
 
 ;;; # User
-(defplan graphite-user
+(defplan user
   "Create the graphite user"
   [{:keys [instance-id] :as options}]
   (let [{:keys [user owner group home]} (get-settings :graphite options)]
@@ -149,7 +150,7 @@
    :owner owner :group group
    (apply concat file-source)))
 
-(defplan graphite-conf
+(defplan configure
   "Write all config files"
   [{:keys [instance-id] :as options}]
   (let [{:keys [carbon-config storage-aggregation storage-schemas home user
@@ -176,6 +177,8 @@
     }
 }"
      :owner owner :group group)
+    (sed (str home "/webapp/graphite/app_settings.py")
+         {"SECRET_KEY = ''" "SECRET_KEY = 'abcdef'"})
     (with-action-options {:sudo-user user
                           :script-dir (str home "/webapp/graphite/")}
       (exec-checked-script
@@ -183,7 +186,7 @@
        ("source" (str ~home "/bin/activate"))
        ("python" manage.py syncdb "--noinput")))))
 
-(defplan graphite-service
+(defplan service
   "Control a graphite service.
 
    Specify `:if-config-changed true` to make actions conditional on a change in
@@ -206,8 +209,8 @@
        (if (not ((str ~home "/bin/" ~daemon ".py") status))
          ("nohup" (str ~home "/bin/" ~daemon ".py") ~(name action)))))))
 
-(defplan graphite-web-server
-  "Start a graohite web service"
+(defplan web-server
+  "Start a graphite web service"
   [{:keys [instance-id] :as options}]
   (let [{:keys [home service user group webapp-bind-address]}
         (get-settings :graphite {:instance-id instance-id})]
@@ -227,20 +230,20 @@
           "& )")
          ("sleep" 5))))))                 ; allow sub-process to start
 
-(defn graphite
+(defn server-spec
   "Returns a server-spec that installs and configures graphite"
   [settings & {:keys [instance-id] :as options}]
-  (server-spec
+  (api/server-spec
    :phases
    {:settings (plan-fn
-                (graphite-settings (merge settings options)))
+                (pallet.crate.graphite/settings (merge settings options)))
     :install (plan-fn
-               (graphite-user options)
-               (install-graphite :instance-id instance-id))
+               (user options)
+               (install options))
     :configure (plan-fn
-                 (graphite-conf options)
-                 (graphite-service "carbon-cache" options)
-                 (graphite-web-server options))
+                 (configure options)
+                 (service "carbon-cache" options)
+                 (web-server options))
     :start (plan-fn
-             (graphite-service "carbon-cache" options)
-             (graphite-web-server options))}))
+             (service "carbon-cache" options)
+             (web-server options))}))
