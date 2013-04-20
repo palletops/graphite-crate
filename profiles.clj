@@ -25,8 +25,7 @@
        :aliases {"marg" ["marg" "-d" "doc/0.8/annotated"]
                  "codox" ["doc"]
                  "doc" ["do" "codox," "marg"]}}
-
-
+ :no-checkouts {:checkout-deps-shares ^:replace []} ; disable checkouts
  :release
  {:plugins [[lein-set-version "0.3.0"]]
   :set-version
