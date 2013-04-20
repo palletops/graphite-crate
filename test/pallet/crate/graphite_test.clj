@@ -1,23 +1,29 @@
 (ns pallet.crate.graphite-test
-  (:use
-   clojure.test
-   pallet.crate.graphite
-   [pallet.actions :only [package-manager]]
-   [pallet.algo.fsmop :only [complete?]]
-   [pallet.api :only [lift plan-fn group-spec server-spec]]
-   [pallet.crate.automated-admin-user :only [automated-admin-user]]
-   [pallet.live-test :only [images test-nodes]]))
+  (:require
+   [clojure.test :refer :all]
+   [pallet.crate.graphite :as graphite]
+   [pallet.crate.network-service :refer [wait-for-port-listen]]
+   [pallet.actions :refer [package-manager]]
+   [pallet.algo.fsmop :refer [complete?]]
+   [pallet.api :refer [lift plan-fn group-spec server-spec]]
+   [pallet.crate.automated-admin-user :refer [automated-admin-user]]
+   [pallet.live-test :refer [images test-nodes]]))
+
+(def graphite-test-spec
+  (group-spec "graphite"
+    :count 1
+    :extends [(graphite/server-spec {})]
+    :phases {:bootstrap (plan-fn
+                          (automated-admin-user)
+                          (package-manager :update))
+             :test (plan-fn
+                     (wait-for-port-listen 8080))}
+    :roles #{:live-test}))
 
 (deftest ^:live-test live-test
-  (let [settings {}]
-    (doseq [image (images)]
-      (test-nodes
-       [compute node-map node-types [:install :configure]]
-       {:graphite
-        (group-spec
-         "graphite"
-         :image image
-         :count 1
-         :extends [(graphite settings)]
-         :phases {:bootstrap (plan-fn (automated-admin-user))
-                  :install (plan-fn (package-manager :update))})}))))
+
+  (doseq [image (images)]
+    (test-nodes
+        [compute node-map node-types [:install :configure]]
+      {:graphite
+       (assoc graphite-test-spec :image image)})))

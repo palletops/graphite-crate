@@ -1,0 +1,6 @@
+{:header "Graphite"
+ :title "Install and configure graphite."
+ :git-repo "https://github.com/pallet/graphite-crate"
+ :api-docs "http://palletops.com/graphite-crate/0.8/api"
+ :annotated-docs "http://palletops.com/graphite-crate/0.8/annotated/uberdoc.html"
+ :versions [{:pallet "0.8.0-beta.8" :version "0.8.0-alpha.1"}]}
