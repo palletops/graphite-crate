@@ -36,7 +36,7 @@ A crate to install and configure graphite.
 
 ## Usage
 
-Add `[com.palletops/graphite-crate "0.8.0-alpha.1"]` to the `:dependencies` in your
+Add `[com.palletops/graphite-crate "0.1.0"]` to the `:dependencies` in your
 `project.clj` file.
 
 
@@ -52,7 +52,7 @@ A crate to install and configure graphite.
 
 ## Usage
 
-Add `[com.palletops/graphite-crate "0.8.0-alpha.1"]` to the `:dependencies` in your
+Add `[com.palletops/graphite-crate "0.1.0"]` to the `:dependencies` in your
 `project.clj` file.
 
 
