@@ -7,7 +7,7 @@
    [pallet.algo.fsmop :refer [complete?]]
    [pallet.api :refer [lift plan-fn group-spec server-spec]]
    [pallet.crate.automated-admin-user :refer [automated-admin-user]]
-   [pallet.live-test :refer [images test-nodes]]))
+   #_[pallet.live-test :refer [images test-nodes]]))
 
 (def graphite-test-spec
   (group-spec "graphite"
@@ -20,7 +20,7 @@
                      (wait-for-port-listen 8080))}
     :roles #{:live-test}))
 
-(deftest ^:live-test live-test
+#_(deftest ^:live-test live-test
 
   (doseq [image (images)]
     (test-nodes
