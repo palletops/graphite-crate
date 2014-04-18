@@ -30,21 +30,8 @@ Install and configure graphite.
 </tbody>
 </table>
 
-# graphite-crate
-
-A crate to install and configure graphite.
-
-## Usage
-
-Add `[com.palletops/graphite-crate "0.1.0"]` to the `:dependencies` in your
-`project.clj` file.
-
-
-## License
-
-Copyright © 2012 Hugo Duncan
-
-All Rights Reserved.
+The `server-spec` function provides a server spec you can add to an `:extends`
+clause.
 
 # graphite-crate
 
@@ -58,6 +45,7 @@ Add `[com.palletops/graphite-crate "0.1.0"]` to the `:dependencies` in your
 
 ## License
 
-Copyright © 2012 Hugo Duncan
+Licensed under [EPL](http://www.eclipse.org/legal/epl-v10.1.1.html)
 
-All Rights Reserved.
+Copyright © 2012-2014 Hugo Duncan, Antoni Batchelli
+
