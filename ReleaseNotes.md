@@ -1,3 +1,7 @@
+## 0.8.0-alpha.3
+
+- Update pallet and clojure dependency versions
+
 ## 0.8.0-alpha.2
 
 - Remove live-test in preparation of using test-env.
